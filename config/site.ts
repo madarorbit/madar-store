@@ -9,7 +9,7 @@ export const siteConfig = {
   phone: "+967735509366",
 
   social: {
-    github: "https://github.com/madarorbit/madar-store.git",
+    github: "https://github.com/madarorbit/madar-platform.git",
     linkedin: "",
     x: "https://x.com/ORBITewrt",
     whatsapp: "https://t.co/15TSWmv34p",
