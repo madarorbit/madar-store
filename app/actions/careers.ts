@@ -1,5 +1,5 @@
 'use server';
-import {supabaseFetch} from '@/src/lib/supabase/server';
+import {supabaseConfig} from '@/src/lib/env';
 
 export type CareerState={error?:string;success?:string};
 const clean=(value:FormDataEntryValue|null,max:number)=>String(value||'').trim().slice(0,max);
@@ -12,7 +12,8 @@ export async function submitApplication(_previous:CareerState,form:FormData):Pro
   if(!/^\S+@\S+\.\S+$/.test(email))throw new Error('اكتب بريداً إلكترونياً صحيحاً.');
   if(experience_summary.length<40)throw new Error('عرّفنا بخبرتك في 40 حرفاً على الأقل.');
   if(portfolio_url&&!/^https?:\/\//i.test(portfolio_url))throw new Error('رابط الأعمال يجب أن يبدأ بـ http أو https.');
-  await supabaseFetch('/rest/v1/job_applications',{method:'POST',body:JSON.stringify({job_slug,full_name,email,phone,location,portfolio_url,experience_summary})});
+  const{url,key}=supabaseConfig();const response=await fetch(`${url}/rest/v1/job_applications`,{method:'POST',headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({job_slug,full_name,email,phone,location,portfolio_url,experience_summary}),cache:'no-store'});
+  if(!response.ok){console.error('Career application failed',{status:response.status});throw new Error('تعذر إرسال طلب التوظيف الآن. حاول بعد قليل.');}
   return {success:'وصل طلبك إلى فريق مَدار. سنراجع ملاءمته ونتواصل معك عبر البريد إذا انتقل للمرحلة التالية.'};
  }catch(error){return {error:error instanceof Error?error.message:'تعذر إرسال الطلب الآن. حاول لاحقاً.'};}
 }
