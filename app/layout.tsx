@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { siteConfig } from '@/src/config/site';
 import './globals.css';
+import { CartProvider } from '@/components/cart/CartProvider';
 
 
 const metadataBase = new URL(siteConfig.baseUrl);
@@ -43,7 +44,7 @@ export const viewport: Viewport = { themeColor: siteConfig.themeColor };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ar" dir="rtl" className="h-full scroll-smooth antialiased">
-      <body className="flex min-h-full flex-col bg-white text-[#0F172A]">{children}</body>
+      <body className="flex min-h-full flex-col bg-white text-[#0F172A]"><CartProvider>{children}</CartProvider></body>
     </html>
   );
 }
