@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { supabaseConfig } from '@/src/lib/env';
 
 export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'EDITOR' | 'CUSTOMER';
-export type Profile = { id:string; email:string; full_name:string|null; phone:string|null; avatar_url:string|null; role:Role; status:'active'|'disabled' };
+export type Profile = { id:string; email:string|null; full_name:string|null; phone:string|null; avatar_url:string|null; role:Role; status:'active'|'disabled' };
 export class SupabaseRequestError extends Error {
  constructor(public status:number, public code:string|undefined) { super('تعذر إتمام العملية. حاول مرة أخرى.'); }
 }

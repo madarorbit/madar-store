@@ -1,0 +1,7 @@
+'use client';
+import{useEffect,useState}from'react';import{useRouter,useSearchParams}from'next/navigation';
+export default function AuthCallback(){
+ const router=useRouter(),query=useSearchParams(),[message,setMessage]=useState('جارٍ التحقق من البريد الإلكتروني…');
+ useEffect(()=>{const complete=async()=>{const hash=new URLSearchParams(window.location.hash.replace(/^#/,'')),payload={access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token'),expires_in:Number(hash.get('expires_in')||3600),token_hash:query.get('token_hash'),type:query.get('type'),next:query.get('next')},error=hash.get('error_description')||query.get('error_description');if(error)throw new Error('رابط التحقق غير صالح أو انتهت صلاحيته. اطلب رسالة جديدة.');const response=await fetch('/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.error);router.replace(result.destination||'/dashboard');router.refresh();};complete().catch(error=>setMessage(error instanceof Error?error.message:'تعذر إكمال التحقق.'));},[query,router]);
+ return <main className="grid min-h-screen place-items-center bg-[#0B1020] p-6 text-white"><div className="max-w-md rounded-3xl border border-white/10 bg-white/[.04] p-8 text-center"><div className="mx-auto h-10 w-10 animate-pulse rounded-full bg-[#70E4D4]/30"/><h1 className="mt-5 text-2xl font-black">تأكيد حساب مَدار</h1><p className="mt-3 leading-8 text-slate-300">{message}</p></div></main>;
+}
