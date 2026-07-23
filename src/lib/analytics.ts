@@ -21,6 +21,11 @@ export function adenToday(){
  const pick=(type:string)=>parts.find(part=>part.type===type)?.value||'';
  return `${pick('year')}-${pick('month')}-${pick('day')}`;
 }
+export function shiftIsoDate(date:string,days:number){
+ if(!datePattern.test(date)||!Number.isInteger(days))throw new Error('تعذر حساب الفترة المختصرة.');
+ const[year,month,day]=date.split('-').map(Number),shifted=new Date(Date.UTC(year,month-1,day)+days*86400000);
+ return shifted.toISOString().slice(0,10);
+}
 export function resolveAnalyticsRange(start?:string,end?:string){
  const today=adenToday(),defaultStart=`${today.slice(0,8)}01`;
  const from=datePattern.test(start||'')?start!:defaultStart,to=datePattern.test(end||'')?end!:today;
