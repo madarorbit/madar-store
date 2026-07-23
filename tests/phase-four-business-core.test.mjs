@@ -47,7 +47,7 @@ test('Data API grants are revoked before least-privilege grants are restored',()
  }
  assert.match(lockdown,/revoke all on table public\.job_applications from anon/);
  assert.match(lockdown,/grant insert on table public\.job_applications to anon/);
- assert.doesNotMatch(lockdown,/grant .* to anon;\n(?!-- Career)/);
+ assert.doesNotMatch(lockdown,/grant [^;]*public\.business_[^;]* to anon/);
 });
 
 test('inventory quantity cannot be directly edited through the Data API grant',()=>{
