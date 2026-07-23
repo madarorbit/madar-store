@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const migration=fs.readFileSync('supabase/migrations/20260724040000_phase_four_business_analytics.sql','utf8');
 const wrapperFix=fs.readFileSync('supabase/migrations/20260724040100_rpc_wrapper_execution_fix.sql','utf8');
+const wrapperHardening=fs.readFileSync('supabase/migrations/20260724040200_rpc_wrapper_invoker_hardening.sql','utf8');
 const page=fs.readFileSync('app/workspace/analytics/page.tsx','utf8');
 const exportRoute=fs.readFileSync('app/workspace/analytics/export/route.ts','utf8');
 const helpers=fs.readFileSync('src/lib/analytics.ts','utf8');
@@ -28,11 +29,17 @@ test('business metrics include revenue costs profit customers stock and tasks',(
  assert.match(migration,/top_products/);
 });
 
-test('public wrappers execute as owner while private implementations remain protected',()=>{
+test('RPC wrappers end as invokers and delegate only to unexposed checked implementations',()=>{
  const wrappers=['adjust_inventory','business_analytics','commit_business_import','create_customer_order','create_workspace_request','ensure_student_workspace','list_organization_members','manage_organization_member','record_business_sale','review_order_payment','review_workspace_request','rollback_business_import','submit_order_payment','submit_workspace_payment','sync_student_reminders','update_order_fulfillment'];
- for(const name of wrappers)assert.match(wrapperFix,new RegExp(`alter function public\\.${name}\\(`));
+ for(const name of wrappers){
+  assert.match(wrapperFix,new RegExp(`alter function public\\.${name}\\(`));
+  assert.match(wrapperHardening,new RegExp(`alter function public\\.${name}\\(`));
+ }
  assert.match(wrapperFix,/security definer/g);
- assert.doesNotMatch(wrapperFix,/grant execute on function private\./);
+ assert.match(wrapperHardening,/security invoker/g);
+ assert.match(wrapperHardening,/grant execute on function private\.business_analytics_impl/);
+ assert.match(wrapperHardening,/grant execute on function private\.record_business_sale_impl/);
+ assert.doesNotMatch(wrapperHardening,/grant execute on function public\./);
 });
 
 test('analytics range is timezone-aware and bounded',()=>{
