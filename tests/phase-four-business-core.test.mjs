@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const migration=fs.readFileSync('supabase/migrations/20260724020000_phase_four_business_core.sql','utf8');
 const hardening=fs.readFileSync('supabase/migrations/20260724020100_phase_four_business_core_hardening.sql','utf8');
+const lockdown=fs.readFileSync('supabase/migrations/20260724020200_phase_four_business_core_grant_lockdown.sql','utf8');
 const actions=fs.readFileSync('app/actions/business.ts','utf8');
 const dashboard=fs.readFileSync('app/workspace/page.tsx','utf8');
 
@@ -36,12 +37,21 @@ test('sales and inventory mutations are atomic private implementations',()=>{
  assert.match(migration,/update public\.business_customers/);
  assert.match(migration,/security invoker/);
  assert.match(migration,/grant execute on function public\.record_business_sale/);
- assert.match(migration,/grant select on public\.business_sales,public\.business_sale_items,public\.inventory_movements/);
- assert.doesNotMatch(migration,/grant (insert|update|delete) on public\.business_sales/);
+ assert.doesNotMatch(lockdown,/grant (insert|update|delete) on public\.business_sales/);
+ assert.match(lockdown,/grant select on public\.business_sales,public\.business_sale_items,public\.inventory_movements/);
+});
+
+test('Data API grants are revoked before least-privilege grants are restored',()=>{
+ for(const table of [...tenantTables,'organization_member_permissions']){
+  assert.match(lockdown,new RegExp(`revoke all on table public\\.${table} from anon,authenticated`));
+ }
+ assert.match(lockdown,/revoke all on table public\.job_applications from anon/);
+ assert.match(lockdown,/grant insert on table public\.job_applications to anon/);
+ assert.doesNotMatch(lockdown,/grant .* to anon;\n(?!-- Career)/);
 });
 
 test('inventory quantity cannot be directly edited through the Data API grant',()=>{
- assert.match(migration,/grant update\(name,sku,description,category,cost,price,low_stock_threshold,is_active\) on public\.business_products/);
+ assert.match(lockdown,/grant update\(name,sku,description,category,cost,price,low_stock_threshold,is_active\) on public\.business_products/);
  assert.match(migration,/public\.adjust_inventory/);
  assert.match(actions,/quantity_change:numberValue/);
  assert.match(actions,/allowZero:false/);
