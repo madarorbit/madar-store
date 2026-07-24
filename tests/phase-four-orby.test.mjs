@@ -26,7 +26,7 @@ test('ORBY enforces daily quotas before generation',()=>{
  assert.match(migration,/100000/);
  assert.match(migration,/ORBY_DAILY_LIMIT/);
  assert.match(api,/rpc\/consume_orby_quota/);
- assert.ok(api.indexOf('rpc/consume_orby_quota')<api.indexOf('generateText'));
+ assert.ok(api.indexOf('rpc/consume_orby_quota')<api.indexOf('const result=await generateText'));
 });
 
 test('ORBY context comes from checked workspace analytics only',()=>{
