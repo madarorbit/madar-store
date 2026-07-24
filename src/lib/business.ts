@@ -8,15 +8,22 @@ export type WorkspaceRecord={id:string;name:string;slug:string;type:WorkspaceTyp
 export type BusinessWorkspace=WorkspaceRecord&{type:Exclude<WorkspaceType,'STUDENT'>};
 export type WorkspaceMembership={role:'OWNER'|'ADMIN'|'MEMBER';organizations:WorkspaceRecord};
 export type BusinessMembership=Omit<WorkspaceMembership,'organizations'>&{organizations:BusinessWorkspace};
+export type WorkspaceSubscriptionStatus='active'|'past_due'|'expired'|'cancelled'|'missing';
 
-export async function requireBusinessWorkspace(){
+type RequireBusinessWorkspaceOptions={allowExpired?:boolean};
+const scalar=<T,>(value:unknown)=>Array.isArray(value)?value[0] as T:value as T;
+
+export async function requireBusinessWorkspace({allowExpired=false}:RequireBusinessWorkspaceOptions={}){
  const user=await requireUser();
  const rows=await supabaseFetch(`/rest/v1/organization_members?user_id=eq.${encodeURIComponent(user.id)}&select=role,organizations(id,name,slug,type,status,currency)`);
  const candidate=(rows||[]).find((row:WorkspaceMembership)=>row.organizations&&row.organizations.type!=='STUDENT') as WorkspaceMembership|undefined;
  if(!candidate?.organizations)redirect('/onboarding');
  if(candidate.organizations.status!=='active')redirect('/dashboard');
- const membership=candidate as BusinessMembership;
- return{user,membership,workspace:membership.organizations};
+ const membership=candidate as BusinessMembership,workspace=membership.organizations;
+ const subscriptionStatus=scalar<WorkspaceSubscriptionStatus>(await supabaseFetch('/rest/v1/rpc/refresh_workspace_subscription',{method:'POST',body:JSON.stringify({target_organization:workspace.id})}));
+ if(subscriptionStatus==='missing')redirect('/account/subscription?missing=1');
+ if(subscriptionStatus==='expired'&&!allowExpired)redirect('/account/subscription?expired=1');
+ return{user,membership,workspace,subscriptionStatus};
 }
 
 export function businessMoney(value:number|string|null|undefined,currency='YER'){
