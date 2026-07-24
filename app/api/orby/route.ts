@@ -16,7 +16,7 @@ export async function POST(request:Request){
   if(!membership?.[0]?.organizations||membership[0].organizations.type==='STUDENT'||membership[0].organizations.status!=='active')return NextResponse.json({error:'لا تملك صلاحية استخدام أوربي في هذه المساحة.'},{status:403});
   const usage=scalar<{requests:number;remaining:number}>(await supabaseFetch('/rest/v1/rpc/consume_orby_quota',{method:'POST',body:JSON.stringify({target_organization:organizationId,submitted_characters:prompt.length})}));
   const context=scalar<OrbyContext>(await supabaseFetch('/rest/v1/rpc/orby_business_context',{method:'POST',body:JSON.stringify({target_organization:organizationId})}));
-  let text:string,source:'ai'|'smart-fallback'='ai',providerError:string|undefined;
+  let text:string,source:'ai'|'smart-fallback'='ai',providerUnavailable=false;
   try{
    const result=await generateText({
     model:'google/gemini-3-flash',
@@ -27,10 +27,11 @@ export async function POST(request:Request){
    });
    text=result.text.trim();if(!text)throw new Error('EMPTY_AI_RESPONSE');
   }catch(error){
-   providerError=error instanceof Error?error.message:'AI_PROVIDER_UNAVAILABLE';
+   providerUnavailable=true;
+   console.warn('ORBY AI provider unavailable; using smart fallback',error instanceof Error?error.name:'unknown');
    source='smart-fallback';text=deterministicOrbyResponse(mode,context,prompt);
   }
-  const saved=await supabaseFetch('/rest/v1/rpc/save_orby_exchange',{method:'POST',body:JSON.stringify({target_organization:organizationId,target_conversation:conversationId,conversation_title:prompt.slice(0,120),conversation_mode:mode,user_prompt:prompt,assistant_response:text,response_source:source,response_metadata:{provider_error:providerError?providerError.slice(0,300):null}})});
+  const saved=await supabaseFetch('/rest/v1/rpc/save_orby_exchange',{method:'POST',body:JSON.stringify({target_organization:organizationId,target_conversation:conversationId,conversation_title:prompt.slice(0,120),conversation_mode:mode,user_prompt:prompt,assistant_response:text,response_source:source,response_metadata:{provider_unavailable:providerUnavailable}})});
   const savedConversationId=scalar<string>(saved);
   return NextResponse.json({text,source,conversationId:savedConversationId,remaining:usage?.remaining??0});
  }catch(error){
