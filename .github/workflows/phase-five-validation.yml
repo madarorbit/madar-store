@@ -37,6 +37,8 @@ jobs:
         run: npm test
       - name: فحص جودة الشفرة
         run: npm run lint
+      - name: توليد تعريفات المسارات
+        run: npx next typegen
       - name: التحقق من الأنواع
         run: npm run typecheck
       - name: بناء المنصة
